@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
+
 import pandas as pd
 import streamlit as st
 
@@ -9,7 +10,51 @@ from storage import append_record, load_records, ensure_dirs
 from pdf_utils import generate_service_report_pdf
 
 
+# =========================
+# CONFIGURACIÓN DE PÁGINA
+# =========================
+st.set_page_config(page_title="Old Motor Garage | Reportes", layout="wide")
+
+
+# =========================
+# LOGIN
+# =========================
+def login():
+    st.title("🔒 Acceso restringido")
+    st.write("Ingresa tu usuario y contraseña para continuar.")
+
+    usuario = st.text_input("Usuario")
+    password = st.text_input("Contraseña", type="password")
+
+    if st.button("Entrar"):
+        if (
+            usuario == st.secrets["APP_USER"]
+            and password == st.secrets["APP_PASSWORD"]
+        ):
+            st.session_state["logueada"] = True
+            st.rerun()
+        else:
+            st.error("Usuario o contraseña incorrectos")
+
+
+if "logueada" not in st.session_state:
+    st.session_state["logueada"] = False
+
+if not st.session_state["logueada"]:
+    login()
+    st.stop()
+
+if st.sidebar.button("Cerrar sesión"):
+    st.session_state["logueada"] = False
+    st.rerun()
+
+
+# =========================
+# APP NORMAL
+# =========================
 LOGO_PATH = "logo.jpg"
+
+ensure_dirs()
 
 
 def now_folio() -> str:
@@ -44,18 +89,15 @@ def row_to_record(row: pd.Series) -> dict:
     checkbox_keys = [
         "frenos_calipers", "frenos_balatas", "frenos_grosor", "frenos_mangueras",
         "frenos_liquido", "frenos_purga",
-
         "motor_prueba_aceite", "motor_residuos", "motor_compresion", "motor_balancines",
         "motor_cuerpo_aceleracion", "motor_bujia", "motor_aceite_motul", "motor_filtro_aceite",
-
         "despl_cadena", "despl_pinon_seguro", "despl_flecha_transmision",
         "despl_sprocket_flecha", "despl_retenes",
-
         "carga_estator_regulador_bateria", "carga_encendido_circuito",
         "carga_conectores_arnes", "carga_mandos_general",
-
         "susp_barras_amortiguadores", "susp_retenes",
     ]
+
     for k in checkbox_keys:
         record[k] = _to_bool(record.get(k))
 
@@ -67,6 +109,7 @@ def row_to_record(row: pd.Series) -> dict:
         "recomendaciones", "tecnico_responsable", "comentarios_tecnico",
         "folio", "timestamp"
     ]
+
     for k in text_keys:
         v = record.get(k, "")
         if pd.isna(v):
@@ -76,9 +119,6 @@ def row_to_record(row: pd.Series) -> dict:
 
     return record
 
-
-st.set_page_config(page_title="Old Motor Garage | Reportes", layout="wide")
-ensure_dirs()
 
 st.title("📄 Old Motor Garage — Reporte de Servicio")
 
@@ -92,6 +132,7 @@ with tab1:
         st.warning("No encontré logo.jpg en el mismo directorio que app.py. Colócalo ahí para que salga en el PDF.")
 
     colA, colB = st.columns(2)
+
     with colA:
         st.markdown("### Datos del cliente")
         cliente_nombre = st.text_input("Nombre")
@@ -135,7 +176,7 @@ with tab1:
         motor_balancines = st.checkbox("Ajuste de balancines (según manual)", value=True)
         motor_cuerpo_aceleracion = st.checkbox("Limpieza de cuerpo de aceleración", value=True)
         motor_bujia = st.checkbox("Cambio de bujía", value=True)
-        motor_aceite_motul = st.checkbox("Cambio de aceite (Motul sintético)", value=True)
+        motor_aceite_motul = st.checkbox("Cambio de aceite Motul sintético", value=True)
         motor_filtro_aceite = st.checkbox("Cambio de filtro de aceite", value=True)
         obs_motor = st.text_area("Observaciones motor", height=90)
 
@@ -151,9 +192,10 @@ with tab1:
     st.divider()
 
     c4, c5 = st.columns(2)
+
     with c4:
         st.markdown("### Sistema de carga")
-        carga_estator_regulador_bateria = st.checkbox("Escaneo de carga (estator/regulador/batería)", value=True)
+        carga_estator_regulador_bateria = st.checkbox("Escaneo de carga estator/regulador/batería", value=True)
         carga_encendido_circuito = st.checkbox("Escaneo de encendido y circuito", value=True)
         carga_conectores_arnes = st.checkbox("Mantenimiento a conectores del arnés", value=True)
         carga_mandos_general = st.checkbox("Revisión de mandos y funcionamiento general", value=True)
@@ -173,7 +215,7 @@ with tab1:
 
     st.divider()
 
-    guardar = st.button("✅ Guardar (PDF + Excel)", use_container_width=True)
+    guardar = st.button("✅ Guardar PDF + Excel", use_container_width=True)
 
     if guardar:
         folio = now_folio()
@@ -182,20 +224,16 @@ with tab1:
         record = {
             "folio": folio,
             "timestamp": datetime.now().isoformat(timespec="seconds"),
-
             "cliente_nombre": cliente_nombre,
             "cliente_tel": cliente_tel,
             "fecha_ingreso": str(fecha_ingreso),
             "fecha_entrega": str(fecha_entrega),
-
             "moto_marca": moto_marca,
             "moto_modelo": moto_modelo,
             "moto_anio": moto_anio,
             "moto_km": moto_km,
             "moto_placas_serie": moto_placas_serie,
-
             "observaciones_recepcion": observaciones_recepcion,
-
             "frenos_calipers": frenos_calipers,
             "frenos_balatas": frenos_balatas,
             "frenos_grosor": frenos_grosor,
@@ -203,7 +241,6 @@ with tab1:
             "frenos_liquido": frenos_liquido,
             "frenos_purga": frenos_purga,
             "obs_frenos": obs_frenos,
-
             "motor_prueba_aceite": motor_prueba_aceite,
             "motor_residuos": motor_residuos,
             "motor_compresion": motor_compresion,
@@ -213,24 +250,20 @@ with tab1:
             "motor_aceite_motul": motor_aceite_motul,
             "motor_filtro_aceite": motor_filtro_aceite,
             "obs_motor": obs_motor,
-
             "despl_cadena": despl_cadena,
             "despl_pinon_seguro": despl_pinon_seguro,
             "despl_flecha_transmision": despl_flecha_transmision,
             "despl_sprocket_flecha": despl_sprocket_flecha,
             "despl_retenes": despl_retenes,
             "obs_despl": obs_despl,
-
             "carga_estator_regulador_bateria": carga_estator_regulador_bateria,
             "carga_encendido_circuito": carga_encendido_circuito,
             "carga_conectores_arnes": carga_conectores_arnes,
             "carga_mandos_general": carga_mandos_general,
             "obs_carga": obs_carga,
-
             "susp_barras_amortiguadores": susp_barras_amortiguadores,
             "susp_retenes": susp_retenes,
             "obs_susp": obs_susp,
-
             "recomendaciones": recomendaciones,
             "tecnico_responsable": tecnico_responsable,
             "comentarios_tecnico": comentarios_tecnico,
@@ -252,21 +285,23 @@ with tab1:
 
 
 with tab2:
-    st.subheader("Consulta de reportes (Excel)")
+    st.subheader("Consulta de reportes Excel")
 
     df = load_records()
+
     if df.empty:
         st.info("Aún no hay registros. Guarda tu primer reporte en la pestaña Captura.")
     else:
         col1, col2, col3, col4 = st.columns(4)
+
         with col1:
-            filtro_cliente = st.text_input("Cliente (contiene)", key="fc")
+            filtro_cliente = st.text_input("Cliente contiene", key="fc")
         with col2:
-            filtro_tel = st.text_input("Teléfono (contiene)", key="ftel")
+            filtro_tel = st.text_input("Teléfono contiene", key="ftel")
         with col3:
-            filtro_marca = st.text_input("Marca (contiene)", key="fm")
+            filtro_marca = st.text_input("Marca contiene", key="fm")
         with col4:
-            filtro_tecnico = st.text_input("Técnico (contiene)", key="ft")
+            filtro_tecnico = st.text_input("Técnico contiene", key="ft")
 
         df_view = df.copy()
 
@@ -285,12 +320,12 @@ with tab2:
         st.markdown("## 🔁 Re-generar PDF por teléfono")
 
         if "cliente_tel" not in df.columns or "folio" not in df.columns:
-            st.warning("Necesito columnas 'cliente_tel' y 'folio' en el Excel.")
+            st.warning("Necesito columnas cliente_tel y folio en el Excel.")
         else:
-            phone_query = st.text_input("Buscar registro por teléfono (puedes escribir parcial)", key="regen_phone")
+            phone_query = st.text_input("Buscar registro por teléfono", key="regen_phone")
 
             if not phone_query.strip():
-                st.info("Escribe un teléfono (o parte del teléfono) para buscar el registro.")
+                st.info("Escribe un teléfono o parte del teléfono para buscar el registro.")
             else:
                 q = _norm_phone(phone_query)
                 df_candidates = df.copy()
@@ -299,18 +334,27 @@ with tab2:
                 if q:
                     df_candidates = df_candidates[df_candidates["__tel_norm__"].str.contains(q, na=False)]
                 else:
-                    df_candidates = df_candidates[df_candidates["cliente_tel"].astype(str).str.contains(phone_query, case=False, na=False)]
+                    df_candidates = df_candidates[
+                        df_candidates["cliente_tel"].astype(str).str.contains(phone_query, case=False, na=False)
+                    ]
 
                 if df_candidates.empty:
                     st.warning("No encontré registros con ese teléfono.")
                 else:
                     st.success(f"Encontré {len(df_candidates)} registro(s).")
 
-                    preview_cols = [c for c in [
-                        "folio", "timestamp", "cliente_nombre", "cliente_tel",
-                        "moto_marca", "moto_modelo", "fecha_ingreso", "tecnico_responsable"
-                    ] if c in df_candidates.columns]
-                    st.dataframe(df_candidates[preview_cols].sort_values(by="timestamp", ascending=False), use_container_width=True)
+                    preview_cols = [
+                        c for c in [
+                            "folio", "timestamp", "cliente_nombre", "cliente_tel",
+                            "moto_marca", "moto_modelo", "fecha_ingreso", "tecnico_responsable"
+                        ]
+                        if c in df_candidates.columns
+                    ]
+
+                    st.dataframe(
+                        df_candidates[preview_cols].sort_values(by="timestamp", ascending=False),
+                        use_container_width=True
+                    )
 
                     folios = df_candidates["folio"].astype(str).tolist()
                     folio_sel = st.selectbox("Selecciona el folio", options=folios, key="folio_sel_filtered")
@@ -319,13 +363,18 @@ with tab2:
                     record = row_to_record(selected_row)
 
                     colA, colB = st.columns([1, 1])
+
                     with colA:
                         st.write("**Resumen**")
-                        st.write(f"**Cliente:** {record.get('cliente_nombre','')}")
-                        st.write(f"**Tel:** {record.get('cliente_tel','')}")
-                        st.write(f"**Moto:** {record.get('moto_marca','')} {record.get('moto_modelo','')} ({record.get('moto_anio','')})")
-                        st.write(f"**Ingreso:** {record.get('fecha_ingreso','')}")
-                        st.write(f"**Técnico:** {record.get('tecnico_responsable','')}")
+                        st.write(f"**Cliente:** {record.get('cliente_nombre', '')}")
+                        st.write(f"**Tel:** {record.get('cliente_tel', '')}")
+                        st.write(
+                            f"**Moto:** {record.get('moto_marca', '')} "
+                            f"{record.get('moto_modelo', '')} "
+                            f"({record.get('moto_anio', '')})"
+                        )
+                        st.write(f"**Ingreso:** {record.get('fecha_ingreso', '')}")
+                        st.write(f"**Técnico:** {record.get('tecnico_responsable', '')}")
 
                     with colB:
                         regen = st.button("🔁 Re-generar PDF", use_container_width=True, key="regen_btn")
@@ -334,7 +383,7 @@ with tab2:
                         regen_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
                         pdf_path = os.path.join(
                             "output_pdfs",
-                            f"reporte_regenerado_{record.get('folio','')}_{regen_stamp}.pdf"
+                            f"reporte_regenerado_{record.get('folio', '')}_{regen_stamp}.pdf"
                         )
 
                         generate_service_report_pdf(record, pdf_path, logo_path=LOGO_PATH)
@@ -350,6 +399,7 @@ with tab2:
                             )
 
         xlsx_path = os.path.join("data", "records.xlsx")
+
         if os.path.exists(xlsx_path):
             with open(xlsx_path, "rb") as f:
                 st.download_button(
